@@ -13,3 +13,4 @@ vpc1_internet_gw        = "vpc1_igw"
 security_group_name     = "vpc1-sg"
 instance_type           = "t2.micro"
 key_name                = "my-key"
+bucket_count = 3

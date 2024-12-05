@@ -13,6 +13,7 @@ variable "vpc1_internet_gw" {}
 variable "security_group_name" {}
 variable "instance_type" {}
 variable "key_name" {}
+variable "bucket_count" { }
 
 
 
