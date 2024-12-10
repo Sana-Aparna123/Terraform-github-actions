@@ -67,12 +67,12 @@ jobs:
       working-directory: appu
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve
+      run: terraform apply -auto-approve -lock=false
       working-directory: appu
 
    
     - name: terraform destroy
-      run: terraform destroy -auto-approve
+      run: terraform destroy -auto-approve -lock=false
       working-directory: appu
 
 
