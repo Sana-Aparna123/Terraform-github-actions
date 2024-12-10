@@ -1,0 +1,48 @@
+name: Terraform Deployment
+
+on:
+  push:
+    branches:
+      - dev # Trigger on push to the main branch (adjust as necessary)
+  pull_request:
+    branches:
+      - dev # Trigger on pull request targeting the main branch
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest  # The runner environment
+        
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: '1.9.8'  # Specify the version of Terraform to use
+
+    - name: Set up AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Store this in GitHub secrets
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Store this in GitHub secrets
+        aws_region: 'us-east-1'  # Replace with your desired AWS region
+
+    - name: Initialize Terraform
+      run: terraform init
+
+    - name: Run Terraform validate
+      run: terraform validate 
+
+    - name: Run Terraform plan
+      run: terraform plan -out=tfplan
+  
+    - name: Apply Terraform Plan
+      run: terraform apply -auto-approve tfplan
+
+    - name: Terraform Output
+      run: terraform output
+    
+    - name: Clean up
+      run: terraform destroy -auto-approve 
