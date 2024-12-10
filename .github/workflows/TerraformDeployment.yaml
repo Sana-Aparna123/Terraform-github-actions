@@ -3,7 +3,7 @@ name: Terraform Deployment
 on:
   push:
     branches:
-      - dev # Change this to your branch name if differen
+      - dev # Change this to your branch name if different
   pull_request:
     branches:
       - dev  # Change this to your branch name if different
