@@ -3,56 +3,87 @@ name: Terraform Deployment
 on:
   push:
     branches:
-      - dev # Trigger on push to the main branch (adjust as necessary)
+      - dev # Change this to your branch name if different
   pull_request:
     branches:
-      - dev # Trigger on pull request targeting the main branch
+      - dev  # Change this to your branch name if different
 
 jobs:
   terraform:
-    runs-on: ubuntu-latest  # The runner environment
-        
+    name: Terraform Apply
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v2
-      with:
-        terraform_version: '1.9.8'  # Specify the version of Terraform to use
+    - name: Set up Git
+      run: |
+        git config --global user.name "Sana-Aparna123"
+        git config --global user.email "aparnassana2001@gmail.com"
 
-    - name: Set up AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Store this in GitHub secrets
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Store this in GitHub secrets
-        aws_region: 'us-east-1'  # Replace with your desired AWS region
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git
+        
+    - name: Run tests
+      run: |
+        # Your test commands here
+        echo "Running tests..."
+    - name: Download and Install AWS CLI
+      run: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+        export PATH=/usr/local/bin:$PATH
+        aws --version
+
+    - name: Configure AWS CLI
+      run: |
+        aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+        aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+        aws configure set region "${{ secrets.AWS_REGION }}"
+
+    - name: Download and Install Terraform
+      run: |
+        terraform_version="1.9.8"  # Use the specified version
+        wget "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
+        unzip terraform_${terraform_version}_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+        terraform -v
 
     - name: Set working directory
       run: cd appu
-      
-    - name: Initialize Terraform
-      run: terraform init 
-      working-directory: appu
-      
 
-    - name: Run Terraform validate
-      run: terraform validate 
+    - name: Terraform Init
+      run: terraform init
       working-directory: appu
 
-    - name: Run Terraform plan
-      run: terraform plan -out=tfplan
-      working-directory: appu
-  
-    - name: Apply Terraform Plan
-      run: terraform apply -auto-approve tfplan
+    - name: Terraform Plan
+      run: terraform plan
       working-directory: appu
 
-    - name: Terraform Output
-      run: terraform output
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
       working-directory: appu
-    
-    - name: Clean up
-      run: terraform destroy -auto-approve 
+
+   
+    - name: terraform destroy
+      run: terraform destroy -auto-approve
       working-directory: appu
+
+
+
+
+
+
+
+
+
+
+
+
+
