@@ -63,7 +63,7 @@ jobs:
       working-directory: appu
 
     - name: Terraform Plan
-      run: terraform plan
+      run: terraform plan -lock=false
       working-directory: appu
 
     - name: Terraform Apply
