@@ -29,20 +29,30 @@ jobs:
         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Store this in GitHub secrets
         aws_region: 'us-east-1'  # Replace with your desired AWS region
 
+    - name: Set working directory
+      run: cd appu
+      
     - name: Initialize Terraform
-      run: terraform init
+      run: terraform init 
+      working-directory: appu
+      
 
     - name: Run Terraform validate
       run: terraform validate 
+      working-directory: appu
 
     - name: Run Terraform plan
       run: terraform plan -out=tfplan
+      working-directory: appu
   
     - name: Apply Terraform Plan
       run: terraform apply -auto-approve tfplan
+      working-directory: appu
 
     - name: Terraform Output
       run: terraform output
+      working-directory: appu
     
     - name: Clean up
       run: terraform destroy -auto-approve 
+      working-directory: appu
