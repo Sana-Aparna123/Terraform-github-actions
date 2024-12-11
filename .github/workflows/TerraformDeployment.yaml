@@ -1,77 +1,41 @@
-name: Terraform Deployment
+
+name: Destroy Infrastructure
 
 on:
-  push:
-    branches:
-      - dev # Change this to your branch name if different.
-  pull_request:
-    branches:
-      - dev  # Change this to your branch name if different
+  workflow_dispatch:
+    inputs:
+      confirm_destroy:
+        description: "Type 'yes' to confirm destruction of infrastructure"
+        required: true
+        default: "no"
 
 jobs:
-  terraform:
-    name: Terraform Apply
+  destroy_infra:
     runs-on: ubuntu-latest
-
+    if: github.event.inputs.confirm_destroy == 'yes'
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Set up Git
-      run: |
-        git config --global user.name "Sana-Aparna123"
-        git config --global user.email "aparnassana2001@gmail.com"
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+      
+      - name: Configure AWS CLI
+        run: |
+         aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+         aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+         aws configure set region "${{ secrets.AWS_REGION }}"
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y git
+      - name: Set working directory
+        run: cd appu
+
+      - name: Destroy Infrastructure
+        run: |
+          terraform init
+          terraform destroy -auto-approve
+          working-directory: appu
         
-    - name: Run tests
-      run: |
-        # Your test commands here
-        echo "Running tests..."
-    - name: Download and Install AWS CLI
-      run: |
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
-        export PATH=/usr/local/bin:$PATH
-        aws --version
-
-    - name: Configure AWS CLI
-      run: |
-        aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
-        aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-        aws configure set region "${{ secrets.AWS_REGION }}"
-
-    - name: Download and Install Terraform
-      run: |
-        terraform_version="1.9.8"  # Use the specified version
-        wget "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
-        unzip terraform_${terraform_version}_linux_amd64.zip
-        sudo mv terraform /usr/local/bin/
-        terraform -v
-
-    - name: Set working directory
-      run: cd appu
-
-    - name: Terraform Init
-      run: terraform init
-      working-directory: appu
-
-    - name: Terraform Plan
-      run: terraform plan -lock=false
-      working-directory: appu
-
-    - name: Terraform Apply
-      run: terraform apply -auto-approve -lock=false
-      working-directory: appu
-
-   
-   
+          
 
 
 
