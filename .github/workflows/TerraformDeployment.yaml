@@ -78,26 +78,24 @@ jobs:
       - name: Show Destroy Prompt
         run: |
           echo "=================================================="
-          echo "Do you want to destroy the infrastructure?"
-          echo "Answer 'yes' or 'no'."
+          echo "Destroy choice is: ${{ github.event.inputs.destroy_choice }}"
           echo "=================================================="
 
-      - name: Check Destroy Choice
+      - name: Conditional Destroy Action
         run: |
           if [ "${{ github.event.inputs.destroy_choice }}" == "yes" ]; then
-            echo "You have chosen 'yes' to destroy the infrastructure."
-            echo "Proceeding to destroy the infrastructure..."
-            echo "destroy_choice=true" >> $GITHUB_ENV  # Set the environment variable to trigger destruction
+            echo "Destroying infrastructure..."
+            exit 0  # Proceed with the destroy process in the next job
           else
-            echo "You have chosen 'no'. Infrastructure will not be destroyed."
-            echo "destroy_choice=false" >> $GITHUB_ENV  # Skip destruction
+            echo "Infrastructure will not be destroyed."
+            exit 1  # Skip the destroy process
           fi
 
   terraform_destroy:
     needs: wait_for_destroy
     name: Terraform Destroy
     runs-on: ubuntu-latest
-    if: ${{ env.destroy_choice == 'true' }}  # Only run if 'yes' was chosen
+    if: ${{ needs.wait_for_destroy.outputs.exit_code == 0 }}  # Only run if the destroy choice is 'yes'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
