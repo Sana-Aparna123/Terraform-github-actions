@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm_destroy:
-        description: "Type 'yes' to confirm destruction of infrastructur"
+        description: "Type 'yes' to confirm destruction of infrastructure"
         required: true
         default: "no"
 
