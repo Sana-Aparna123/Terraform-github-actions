@@ -129,6 +129,10 @@ jobs:
           unzip terraform_${terraform_version}_linux_amd64.zip
           sudo mv terraform /usr/local/bin/
           terraform -v
+          
+      - name: Terraform Destroy
+        working-directory: appu
+        run: terraform init --reconfigure
 
       - name: Terraform Destroy
         working-directory: appu
