@@ -71,9 +71,7 @@ jobs:
       working-directory: appu
 
    
-    - name: terraform destroy
-      run: terraform destroy -auto-approve -lock=false
-      working-directory: appu
+   
 
 
 
