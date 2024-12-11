@@ -75,20 +75,24 @@ jobs:
     name: Wait for Destroy Approval
     runs-on: ubuntu-latest
     steps:
-      - name: Check Destroy Choice
+      - name: Show destroy choice
         run: |
           echo "=================================================="
           echo "Destroy choice is: ${{ github.event.inputs.destroy_choice }}"
           echo "=================================================="
           
-      - name: Wait for Destroy Decision
-        run: |
-          if [ "${{ github.event.inputs.destroy_choice }}" == "yes" ]; then
-            echo "Proceeding to destroy infrastructure..."
+          # Set a variable based on the input
+          DESTROY_CHOICE="${{ github.event.inputs.destroy_choice }}"
+
+          # Conditional check to destroy or not
+          if [ "$DESTROY_CHOICE" == "yes" ]; then
+            echo "Destroying infrastructure..."
+            exit 0  # Continue with the destroy operation in the next job (if any)
           else
             echo "Infrastructure will not be destroyed."
-            exit 1  # Stop the process if the user selects 'no'
+            exit 1  # Skip destroy
           fi
+
 
   terraform_destroy:
     needs: wait_for_destroy
