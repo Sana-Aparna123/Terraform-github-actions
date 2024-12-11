@@ -1,4 +1,4 @@
-name: Terraform Deploy with Manual Destroy
+name: Terraform Deploy with Destroy Prompt
 
 on:
   push:
@@ -7,6 +7,16 @@ on:
   pull_request:
     branches:
       - dev
+  workflow_dispatch:
+    inputs:
+      destroy_choice:
+        description: 'Do you want to destroy the infrastructure?'
+        required: true
+        type: choice
+        options:
+          - "yes"
+          - "no"
+        default: "no"
 
 jobs:
   terraform_deploy:
@@ -60,22 +70,32 @@ jobs:
         working-directory: appu
         run: terraform apply -auto-approve -lock=false
 
-  wait_for_approval:
-    name: Wait for Destroy Approval
+  wait_for_destroy:
     needs: terraform_deploy
+    name: Wait for Destroy Approval
     runs-on: ubuntu-latest
-    environment: 
-      name: production
-      url: ${{ github.server_url }}/${{ github.repository }}/actions/workflows
     steps:
-      - name: Manual Approval
-        run: echo "Waiting for manual approval to destroy infrastructure"
+      - name: Show Destroy Prompt
+        run: |
+          echo "=================================================="
+          echo "Do you want to destroy the infrastructure?"
+          echo "Please select 'yes' or 'no' in the workflow input."
+          echo "=================================================="
+
+      - name: Process Choice
+        run: |
+          if [[ "${{ github.event.inputs.destroy_choice }}" == "yes" ]]; then
+            echo "Proceeding with infrastructure destruction..."
+          else
+            echo "Infrastructure will be preserved."
+            exit 0
+          fi
 
   destroy_infrastructure:
+    needs: wait_for_destroy
     name: Destroy Infrastructure
-    needs: wait_for_approval
     runs-on: ubuntu-latest
-    if: github.event.inputs.approve == 'true'
+    if: github.event.inputs.destroy_choice == 'yes'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -100,4 +120,5 @@ jobs:
 
       - name: Terraform Destroy
         working-directory: appu
+        if: github.event.inputs.destroy_choice == 'yes'
         run: terraform destroy -auto-approve -lock=false
