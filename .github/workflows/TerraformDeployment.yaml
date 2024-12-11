@@ -1,27 +1,24 @@
-name: Terraform Deploy with Destroy Prompt
+      - name: Show Destroy Prompt
+        run: |
+          echo "=================================================="
+          echo "Do you want to destroy the infrastructure? Please choose 'yes' or 'no'."
+          echo "=================================================="
 
-on:
-  push:
-    branches:
-      - dev
-  pull_request:
-    branches:
-      - dev
-  workflow_dispatch:
-    inputs:
-      destroy_choice:
-        description: 'Do you want to destroy the infrastructure?'
-        required: true
-        type: choice
-        options:
-          - "yes"
-          - "no"
-        default: "no"
+      - name: Check Destroy Choice
+        run: |
+          if [ "${{ github.event.inputs.destroy_choice }}" == "yes" ]; then
+            echo "Proceeding to destroy the infrastructure..."
+            exit 0  # Proceed with the destroy process in the next job
+          else
+            echo "Infrastructure will not be destroyed. Skipping destruction."
+            exit 1  # Skip the destroy step
+          fi
 
-jobs:
-  terraform_deploy:
-    name: Terraform Deploy
+  terraform_destroy:
+    needs: wait_for_destroy
+    name: Terraform Destroy
     runs-on: ubuntu-latest
+    if: needs.wait_for_destroy.outputs.exit_code == 0  # Only run if the destroy choice is 'yes'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -62,63 +59,6 @@ jobs:
         working-directory: appu
         run: terraform init
 
-      - name: Terraform Plan
-        working-directory: appu
-        run: terraform plan -lock=false
-
-      - name: Terraform Apply
-        working-directory: appu
-        run: terraform apply -auto-approve -lock=false
-
-  wait_for_destroy:
-    needs: terraform_deploy
-    name: Wait for Destroy Approval
-    runs-on: ubuntu-latest
-    steps:
-      - name: Show Destroy Prompt
-        run: |
-          echo "=================================================="
-          echo "Do you want to destroy the infrastructure?"
-          echo "Please select 'yes' or 'no' in the workflow input."
-          echo "=================================================="
-
-      - name: Process Choice
-        run: |
-          if [[ "${{ github.event.inputs.destroy_choice }}" == "yes" ]]; then
-            echo "Proceeding with infrastructure destruction..."
-          else
-            echo "Infrastructure will be preserved."
-            exit 0
-          fi
-
-  destroy_infrastructure:
-    needs: wait_for_destroy
-    name: Destroy Infrastructure
-    runs-on: ubuntu-latest
-    if: github.event.inputs.destroy_choice == 'yes'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Configure AWS CLI
-        run: |
-          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
-          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-          aws configure set region "${{ secrets.AWS_REGION }}"
-
-      - name: Download and Install Terraform
-        run: |
-          terraform_version="1.9.8"
-          wget "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
-          unzip terraform_${terraform_version}_linux_amd64.zip
-          sudo mv terraform /usr/local/bin/
-          terraform -v
-
-      - name: Terraform Init
-        working-directory: appu
-        run: terraform init
-
       - name: Terraform Destroy
         working-directory: appu
-        if: github.event.inputs.destroy_choice == 'yes'
         run: terraform destroy -auto-approve -lock=false
