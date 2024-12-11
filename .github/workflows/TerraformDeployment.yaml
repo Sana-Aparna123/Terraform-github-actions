@@ -1,94 +1,103 @@
-name: Terraform Deployment
+name: Terraform Deploy with Manual Destroy
 
 on:
   push:
     branches:
-      - dev # Change this to your branch name if different
+      - dev
   pull_request:
     branches:
-      - dev  # Change this to your branch name if different
+      - dev
 
 jobs:
-  terraform:
-    name: Terraform Apply
+  terraform_deploy:
+    name: Terraform Deploy
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Git
-      run: |
-        git config --global user.name "Sana-Aparna123"
-        git config --global user.email "aparnassana2001@gmail.com"
+      - name: Set up Git
+        run: |
+          git config --global user.name "Sana-Aparna123"
+          git config --global user.email "aparnassana2001@gmail.com"
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y git
-        
-    - name: Run tests
-      run: |
-        # Your test commands here
-        echo "Running tests..."
-    - name: Download and Install AWS CLI
-      run: |
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
-        export PATH=/usr/local/bin:$PATH
-        aws --version
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git
 
-    - name: Configure AWS CLI
-      run: |
-        aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
-        aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-        aws configure set region "${{ secrets.AWS_REGION }}"
+      - name: Download and Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+          export PATH=/usr/local/bin:$PATH
+          aws --version
 
-    - name: Download and Install Terraform
-      run: |
-        terraform_version="1.9.8"  # Use the specified version
-        wget "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
-        unzip terraform_${terraform_version}_linux_amd64.zip
-        sudo mv terraform /usr/local/bin/
-        terraform -v
+      - name: Configure AWS CLI
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          aws configure set region "${{ secrets.AWS_REGION }}"
 
-    - name: Set working directory
-      run: cd appu
+      - name: Download and Install Terraform
+        run: |
+          terraform_version="1.9.8"
+          wget "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
+          unzip terraform_${terraform_version}_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+          terraform -v
 
-    - name: Terraform Init
-      run: terraform init
-      working-directory: appu
+      - name: Terraform Init
+        working-directory: appu
+        run: terraform init
 
-    - name: Terraform Plan
-      run: terraform plan -lock=false -->i used -lock=false because of synamodb table.
-      working-directory: appu
+      - name: Terraform Plan
+        working-directory: appu
+        run: terraform plan -lock=false
 
-    - name: Terraform Apply
-      run: terraform apply -auto-approve -lock=false
-      working-directory: appu
+      - name: Terraform Apply
+        working-directory: appu
+        run: terraform apply -auto-approve -lock=false
 
-   
-    - name: terraform destroy
-      run: terraform destroy -auto-approve -lock=false
-      working-directory: appu
-        
-          
-          
-        
-          
+  wait_for_approval:
+    name: Wait for Destroy Approval
+    needs: terraform_deploy
+    runs-on: ubuntu-latest
+    environment: 
+      name: production
+      url: ${{ github.server_url }}/${{ github.repository }}/actions/workflows
+    steps:
+      - name: Manual Approval
+        run: echo "Waiting for manual approval to destroy infrastructure"
 
+  destroy_infrastructure:
+    name: Destroy Infrastructure
+    needs: wait_for_approval
+    runs-on: ubuntu-latest
+    if: github.event.inputs.approve == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
+      - name: Configure AWS CLI
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          aws configure set region "${{ secrets.AWS_REGION }}"
 
+      - name: Download and Install Terraform
+        run: |
+          terraform_version="1.9.8"
+          wget "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
+          unzip terraform_${terraform_version}_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+          terraform -v
 
+      - name: Terraform Init
+        working-directory: appu
+        run: terraform init
 
-
-
-
-
-
-
-
-
+      - name: Terraform Destroy
+        working-directory: appu
+        run: terraform destroy -auto-approve -lock=false
