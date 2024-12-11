@@ -96,7 +96,7 @@ jobs:
 
   terraform_destroy:
     needs: wait_for_destroy
-    if: ${{ github.event.inputs.destroy_choice == 'yes' }}  # Only run if the destroy choice is 'yes'
+    if: ${{ vars.DESTROY_CHOICE == 'yes' }}  # Only run if the destroy choice is 'yes'
     name: Destroy Infrastructure
     runs-on: ubuntu-latest
     steps:
