@@ -78,11 +78,11 @@ jobs:
       - name: Show destroy choice
         run: |
           echo "=================================================="
-          echo "Destroy choice is: ${{ github.event.inputs.destroy_choice }}"
+          echo "Destroy choice is: ${{ vars.DESTROY_CHOICE }}"
           echo "=================================================="
           
           # Set a variable based on the input
-          DESTROY_CHOICE="${{ github.event.inputs.destroy_choice }}"
+          DESTROY_CHOICE="${{ vars.DESTROY_CHOICE }}"
 
           # Conditional check to destroy or not
           if [ "$DESTROY_CHOICE" == "yes" ]; then
