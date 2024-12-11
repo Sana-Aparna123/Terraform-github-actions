@@ -69,3 +69,70 @@ jobs:
       - name: Terraform Apply
         working-directory: appu
         run: terraform apply -auto-approve -lock=false
+
+  wait_for_destroy:
+    needs: terraform_deploy
+    name: Wait for Destroy Approval
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show Destroy Prompt
+        run: |
+          echo "=================================================="
+          echo "Do you want to destroy the infrastructure?"
+          echo "Answer 'yes' or 'no'."
+          echo "=================================================="
+
+      - name: Check Destroy Choice
+        run: |
+          if [ "${{ github.event.inputs.destroy_choice }}" == "yes" ]; then
+            echo "You have chosen 'yes' to destroy the infrastructure."
+            echo "Proceeding to destroy the infrastructure..."
+            echo "destroy_choice=true" >> $GITHUB_ENV  # Set the environment variable to trigger destruction
+          else
+            echo "You have chosen 'no'. Infrastructure will not be destroyed."
+            echo "destroy_choice=false" >> $GITHUB_ENV  # Skip destruction
+          fi
+
+  terraform_destroy:
+    needs: wait_for_destroy
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    if: ${{ env.destroy_choice == 'true' }}  # Only run if 'yes' was chosen
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "Sana-Aparna123"
+          git config --global user.email "aparnassana2001@gmail.com"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git
+
+      - name: Download and Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+          export PATH=/usr/local/bin:$PATH
+          aws --version
+
+      - name: Configure AWS CLI
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          aws configure set region "${{ secrets.AWS_REGION }}"
+
+      - name: Download and Install Terraform
+        run: |
+          terraform_version="1.9.8"
+          wget "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
+          unzip terraform_${terraform_version}_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+
+      - name: Terraform Destroy
+        working-directory: appu
+        run: terraform destroy -auto-approve -lock=false
