@@ -1,4 +1,4 @@
-name: Terraform Deploy with Destroy Prompt
+name: Terraform Deploy with Destroy Promp
 
 on:
   push:
